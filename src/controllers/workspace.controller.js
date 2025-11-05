@@ -1,4 +1,4 @@
-import WorkspaceRepository from "../repositories/worksapace.repository.js";
+import WorkspaceRepository from "../repositories/workspace.repository.js";
 
 export class WorkspaceController{
     static async getAll (request, response){
