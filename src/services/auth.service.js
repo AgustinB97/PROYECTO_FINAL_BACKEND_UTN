@@ -1,6 +1,5 @@
 import ENVIRONMENT from "../config/environment.config.js";
 import mailTransporter from "../config/mailTransporter.config.js";
-import { PORT } from "../main2.js";
 import { ServerError } from "../manejarErrorCustom.js";
 import UserRepository from "../repositories/user.repository.js";
 import bcrypt from 'bcrypt'
@@ -36,7 +35,7 @@ class AuthService {
             subject: 'Verifica tu cuenta',
             html: `
             <h1>Verifica tu cuenta de mail</h1>
-            <a href="http://localhost:${PORT}/api/auth/verify-email/${verification_token}">Verificar</a>
+            <a href="http://localhost:8080/api/auth/verify-email/${verification_token}">Verificar</a>
     `
         })
         return
