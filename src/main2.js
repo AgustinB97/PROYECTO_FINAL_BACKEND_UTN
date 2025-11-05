@@ -19,7 +19,7 @@ app.use(cors())
 app.use(express.json());
 
 
-//CONFIGURACION DE HANDLEBARS
+/* //CONFIGURACION DE HANDLEBARS
 //el motor de plantillas de mi app es HandleBars
 app.engine('handlebars', handlebars.engine())
 
@@ -27,7 +27,7 @@ app.engine('handlebars', handlebars.engine())
 app.set('view engine', 'handlebars')
 
 app.set('views', './views')
-
+ */
 app.use('/api/auth', authRouter);
 app.use('/api/workspace', workspaceRouter)
 
@@ -46,8 +46,14 @@ app.use('/api/workspace', workspaceRouter)
     }
 )
  */
- export const PORT = 8080;
-app.listen(PORT, () => { console.log(`ON in ${PORT}`) })
+app.get("/", (req, res) => res.send(" API corriendo correctamente"));
+
+if (process.env.NODE_ENV !== "production") {
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(` Server corriendo en puerto ${PORT}`));
+}
+/* app.listen(PORT, () => { console.log(`ON in ${PORT}`) }) */
 
 
 // las capas basicas van a ser services routes repository middlewares controllers
+export default app
