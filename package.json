@@ -1,0 +1,25 @@
+{
+  "name": "clase-10",
+  "version": "1.0.0",
+  "main": "main2.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/main2.js",
+    "dev": "node --watch ./src/main2.js"
+  },
+  "author": "agus",
+  "type": "module",
+  "license": "ISC",
+  "description": "intento de app con node.js",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-handlebars": "^8.0.3",
+    "joi": "^18.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.3",
+    "nodemailer": "^7.0.10"
+  }
+}
