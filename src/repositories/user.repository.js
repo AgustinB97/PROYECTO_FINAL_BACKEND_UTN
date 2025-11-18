@@ -1,87 +1,95 @@
-import User from "../models/User.model.js"
+import User from "../models/User.model.js";
 
 class UserRepository {
 
-    static async create(name, email, password) {
+    // CREA un usuario nuevo
+    static async create({ name, email, password, avatar }) {
         try {
-            return await User.insertOne({
-                name: name,
-                email: email,
-                password: password
-            })
-            console.log('[SERVER]: usuario creado exitosamente')
-        }
-        catch (error) {
-            console.log('[SERVER ERROR]: usuario no creado', error)
+            const user_created = await User.create({
+                name,
+                email,
+                password,
+                avatar,
+                verified_email: false,
+                active: true
+            });
+            
+            console.log('[SERVER]: usuario creado exitosamente');
+            return user_created;
+
+        } catch (error) {
+            console.error('[SERVER ERROR]: usuario no creado', error);
+            throw error;
         }
     }
 
+    // OBTIENE todos los usuarios
     static async getAll() {
         try {
-            const users = await User.find()
-            console.log(users)
-            return users
-        }
-        catch (error) {
-            console.error('[SERVER ERROR]: no se pudo obtener la lista de usuarios', error)
+            const users = await User.find();
+            return users;
+        } catch (error) {
+            console.error('[SERVER ERROR]: no se pudo obtener la lista de usuarios', error);
+            throw error;
         }
     }
+
+    // BUSCA por ID
     static async getById(id_user) {
         try {
-            const user_found = await User.findById(id_user)
-            console.log(user_found)
-            return user_found
+            const user_found = await User.findById(id_user);
+            return user_found;
+        } catch (error) {
+            console.error('[SERVER ERROR]: no se pudo encontrar al usuario');
+            throw error;
         }
-        catch (error) {
-            console.error('[SERVER ERROR]: no se pudo encontrar al usuario')
-        }
-
     }
+
+    // BUSCA por EMAIL
     static async getByEmail(email) {
         try {
-            const user_found = await User.findOne({ email })
-            console.log(user_found)
-            return user_found
+            const user_found = await User.findOne({ email });
+            return user_found;
+        } catch (error) {
+            console.error('[SERVER ERROR]: no se pudo encontrar al usuario');
+            throw error;
         }
-        catch (error) {
-            console.error('[SERVER ERROR]: no se pudo encontrar al usuario')
-        }
-
     }
+
+    // BORRAR usuario
     static async deleteById(id_user) {
         try {
-            const result = await User.findOneAndDelete({ _id: id_user })
+            const result = await User.findOneAndDelete({ _id: id_user });
             if (!result) {
-                console.log('[SERVER]: no se encontro el usuario');
+                console.log('[SERVER]: no se encontró el usuario');
                 return null;
             }
-            else {
-                console.log('[SERVER]: usuario borrado correctamente', result);
-                return result;
-            }
-        }
-        catch (error) {
+
+            console.log('[SERVER]: usuario borrado correctamente');
+            return result;
+
+        } catch (error) {
             console.error('[SERVER ERROR]: error al intentar borrar usuario', error);
-            throw error
+            throw error;
         }
     }
+
+    // ACTUALIZAR usuario
     static async updateById(id_user, update_user) {
         try {
-            const result = await User.findByIdAndUpdate(id_user, update_user, { new: true });// el new: true devuelve el objeto ya modificado
-                                                                                             // (por defecto el findAndUpdate retorna el objeto sin modificar)
+            const result = await User.findByIdAndUpdate(id_user, update_user, { new: true });
             if (!result) {
                 console.log('[SERVER]: Usuario no encontrado');
                 throw new Error('Usuario no encontrado');
             }
 
-            console.log('[SERVER]: Usuario actualizado correctamente', result);
+            console.log('[SERVER]: Usuario actualizado correctamente');
             return result;
         } catch (error) {
             console.error('[SERVER ERROR]: Error al actualizar usuario', error);
             throw error;
         }
     }
-
 }
 
-export default UserRepository
+export default UserRepository;

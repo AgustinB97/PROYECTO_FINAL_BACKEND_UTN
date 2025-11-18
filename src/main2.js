@@ -6,6 +6,9 @@ import handlebars from "express-handlebars";
 import ENVIRONMENT from "./config/environment.config.js";
 import mailTransporter from "./config/mailTransporter.config.js";
 import cors from 'cors'
+import chatRouter from "./routes/chat.routes.js";
+import userRouter from "./routes/user.routes.js";
+import messageRoutes from "./routes/message.routes.js";
 
 
 connectToMongoDB();
@@ -30,23 +33,10 @@ app.set('views', './views')
  */
 app.use('/api/auth', authRouter);
 app.use('/api/workspace', workspaceRouter)
-
-/* mailTransporter.sendMail(
-    {
-        from: ENVIRONMENT.GMAIL_USER,
-        to: 'aghusss@gmail.com',
-        subject: 'probanding',
-        html: `<body>
-    <h1>ajsdjasdjadsjjdas</h1>
-    <h2>buenonbueno</h2>
-    <div><div><div><a href="https://media.istockphoto.com/id/1985150440/photo/new-zealand-road-trip-at-lake-hawea.jpg?s=1024x1024&w=is&k=20&c=cjX2olN9U6ypP1wv2EVjv6thjkPrERg8RLKhHn-KDO4=">mismafoto</a></div></div></div>
-    <img src="https://media.istockphoto.com/id/1985150440/photo/new-zealand-road-trip-at-lake-hawea.jpg?s=1024x1024&w=is&k=20&c=cjX2olN9U6ypP1wv2EVjv6thjkPrERg8RLKhHn-KDO4=" alt="">
-</body>
-`
-    }
-)
- */
-app.get("/", (req, res) => res.send(" API corriendo correctamente"));
+app.get("/", (req, res) => res.send(" API corriendo correctamente"))
+app.use("/api/chat", chatRouter)
+app.use("/api/users", userRouter)
+app.use("/api/chat", messageRoutes);
 
 if (process.env.NODE_ENV !== "production") {
 const PORT = process.env.PORT || 8080;
