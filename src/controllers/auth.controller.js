@@ -25,7 +25,7 @@ async function saveExternalImage(url) {
 
             response.data.pipe(writer);
 
-            writer.on("finish", () => resolve(`uploads/${fileName}`));
+            writer.on("finish", () => resolve(`https://proyecto-final-backend-utn-three.vercel.app/uploads/${fileName}`));
             writer.on("error", reject);
         });
     } catch (err) {
