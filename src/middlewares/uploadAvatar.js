@@ -1,6 +1,6 @@
 import multer from "multer";
 
-const storage = multer.memoryStorage(); // Guardamos en memoria, no en disco
+const storage = multer.memoryStorage();
 
 export const uploadAvatar = multer({
     storage,

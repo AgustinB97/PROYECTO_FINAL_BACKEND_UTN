@@ -1,13 +1,9 @@
 import User from "../models/User.model.js";
 import bcrypt from "bcrypt";
 import { ServerError } from "../manejarErrorCustom.js";
-import cloudinary from "cloudinary";
+import CloudinaryConfig from "../config/cloudinary.config.js";
 
-cloudinary.v2.config({
-    cloud_name: process.env.CLOUDINARY_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_SECRET
-});
+
 
 export const updateUser = async (req, res, next) => {
     try {
@@ -74,23 +70,28 @@ export const updateAvatar = async (req, res, next) => {
             return res.status(400).json({ ok: false, message: "No se envió ningún archivo" });
         }
 
-        // Subimos el buffer a Cloudinary
-        const result = await cloudinary.v2.uploader.upload_stream(
-            { folder: "avatars" },
-            async (error, result) => {
-                if (error) return next(error);
+        const uploadToCloudinary = (buffer) => {
+            return new Promise((resolve, reject) => {
+                const stream = CloudinaryConfig.uploader.upload_stream(
+                    { folder: "avatars" },
+                    (error, result) => {
+                        if (error) return reject(error);
+                        resolve(result.secure_url);
+                    }
+                );
+                streamifier.createReadStream(buffer).pipe(stream);
+            });
+        };
 
-                const updatedUser = await User.findByIdAndUpdate(
-                    userId,
-                    { avatar: result.secure_url },
-                    { new: true }
-                ).select("_id username email avatar");
+        const avatarUrl = await uploadToCloudinary(req.file.buffer);
 
-                res.json({ ok: true, avatar: updatedUser.avatar, user: updatedUser });
-            }
-        );
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { avatar: avatarUrl },
+            { new: true }
+        ).select("_id username email avatar");
 
-        result.end(req.file.buffer);
+        res.json({ ok: true, avatar: updatedUser.avatar, user: updatedUser });
 
     } catch (error) {
         next(error);
