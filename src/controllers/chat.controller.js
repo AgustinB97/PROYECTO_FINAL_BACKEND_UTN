@@ -9,7 +9,7 @@ class ChatController {
         try {
             const { userAId, userBId } = req.body;
             const chat = await ChatService.createOrGetPrivateChat(userAId, userBId);
-
+            notifyUsersChatsUpdated(chat, io);
             io.to(userAId).emit("new_chat", chat);
             io.to(userBId).emit("new_chat", chat);
 
@@ -24,6 +24,7 @@ class ChatController {
         try {
             const { name, ownerId, participants = [], avatar } = req.body;
             const group = await ChatService.createGroup({ name, ownerId, participants, avatar });
+            notifyUsersChatsUpdated(group, io);
             const allMembers = [ownerId, ...participants];
             allMembers.forEach(userId => {
                 io.to(userId).emit("new_chat", group);
@@ -131,6 +132,7 @@ class ChatController {
                 last_message: newMessage._id
             });
 
+            notifyUsersChatsUpdated(chat, io);
             io.to(chatId).emit("receive_message", populatedMsg);
 
             return res.status(201).json({
@@ -188,6 +190,8 @@ class ChatController {
                 last_message: lastMsg ? lastMsg._id : null
             });
 
+            notifyUsersChatsUpdated(chat, io);
+            
             io.to(chatId).emit("message_deleted", {
                 messageId: msg._id,
                 chatId,

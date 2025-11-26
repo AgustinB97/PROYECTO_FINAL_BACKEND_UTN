@@ -18,13 +18,13 @@ const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
     cors: {
-        origin: [ENVIRONMENT.URL_FRONTEND,'https://proyecto-final-frontend-utn-iota.vercel.app'],
+        origin: [ENVIRONMENT.URL_FRONTEND, 'https://proyecto-final-frontend-utn-iota.vercel.app'],
         credentials: true
     }
 });
 
 app.use(cors({
-    origin: [ENVIRONMENT.URL_FRONTEND,'https://proyecto-final-frontend-utn-iota.vercel.app'],
+    origin: [ENVIRONMENT.URL_FRONTEND, 'https://proyecto-final-frontend-utn-iota.vercel.app'],
     credentials: true
 }));
 
@@ -37,6 +37,11 @@ app.use("/api/chat", chatRouter);
 
 app.use("/uploads", express.static("uploads"));
 
+export const notifyUsersChatsUpdated = (chat, io) => {
+    chat.members.forEach(member => {
+        io.to(member.toString()).emit("chats_updated");
+    });
+};
 
 io.on("connection", (socket) => {
     console.log("Usuario conectado:", socket.id);
@@ -51,25 +56,39 @@ io.on("connection", (socket) => {
         console.log(`socket ${socket.id} entró al chat ${chatId}`);
     });
 
-    socket.on("send_message", (msgData) => {
+
+    socket.on("send_message", async (msgData) => {
         const { chatId } = msgData;
+
+
+        const message = await ChatService.createMessage(msgData);
+
+
+        const chat = await ChatService.getChatById(chatId);
 
         io.to(chatId).emit("receive_message", {
             chatId,
-            message: msgData
+            message,
         });
+
+        notifyUsersChatsUpdated(chat, io);
     });
+
 
     socket.on("delete_message", async ({ messageId }) => {
         try {
             const result = await ChatService.deleteMessage(messageId);
 
             if (result.chatId) {
+
+                const chat = await ChatService.getChatById(result.chatId);
+
+
                 io.to(result.chatId).emit("message_deleted", {
-                    messageId: result.deleted,
-                    chatId: result.chatId,
-                    last_message: await ChatService.getLastMessage(result.chatId)
+                    messageId: result.deleted
                 });
+
+                notifyUsersChatsUpdated(chat, io);
             }
 
         } catch (err) {
@@ -77,8 +96,6 @@ io.on("connection", (socket) => {
             socket.emit("error_delete_message", { message: err.message });
         }
     });
-
-
 
     socket.on("disconnect", () => {
         console.log("Usuario desconectado:", socket.id);
