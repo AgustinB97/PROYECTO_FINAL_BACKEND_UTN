@@ -1,7 +1,7 @@
 import User from "../models/User.model.js";
 import bcrypt from "bcrypt";
 import { ServerError } from "../manejarErrorCustom.js";
-import CloudinaryConfig from "../config/cloudinary.config.js";
+import cloudinary from "../config/cloudinary.config.js";
 
 
 
@@ -72,7 +72,7 @@ export const updateAvatar = async (req, res, next) => {
 
         const uploadToCloudinary = (buffer) => {
             return new Promise((resolve, reject) => {
-                const stream = CloudinaryConfig.uploader.upload_stream(
+                const stream = cloudinary.uploader.upload_stream(
                     { folder: "avatars" },
                     (error, result) => {
                         if (error) return reject(error);

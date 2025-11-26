@@ -4,7 +4,7 @@ import { ServerError } from "../manejarErrorCustom.js";
 import UserRepository from "../repositories/user.repository.js";
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import CloudinaryConfig from "../config/cloudinary.config.js"
+import cloudinary from "../config/cloudinary.config.js";
 
 class AuthService {
     static async register({ username, email, password, avatarFile, avatarUrl }) {
@@ -19,7 +19,7 @@ class AuthService {
 
         if (avatarFile) {
             const result = await new Promise((resolve, reject) => {
-                const uploadStream = CloudinaryConfig.uploader.upload_stream(
+                const uploadStream = cloudinary.uploader.upload_stream(
                     { folder: "avatars" },
                     (err, result) => {
                         if (err) reject(err);
