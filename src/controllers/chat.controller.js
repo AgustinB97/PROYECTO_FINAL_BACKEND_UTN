@@ -124,6 +124,8 @@ class ChatController {
                 content
             });
 
+            const chat = await Chat.findById(chatId).populate("members");
+            
             const populatedMsg = await Message.findById(newMessage._id)
                 .populate("sender", "_id username avatar")
                 .populate("chatId", "_id name members avatar");
@@ -191,7 +193,7 @@ class ChatController {
             });
 
             notifyUsersChatsUpdated(chat, io);
-            
+
             io.to(chatId).emit("message_deleted", {
                 messageId: msg._id,
                 chatId,
