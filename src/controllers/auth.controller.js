@@ -95,7 +95,7 @@ static async register(request, response) {
             await AuthService.verifyEmail(verification_token)
 
             response.redirect(
-                ENVIRONMENT.URL_FRONTEND + '/login?from=verified_email'
+                'https://proyecto-final-frontend-utn-iota.vercel.app' + '/login?from=verified_email'
             )
 
         }

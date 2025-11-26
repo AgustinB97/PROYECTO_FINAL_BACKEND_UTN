@@ -1,6 +1,13 @@
 import User from "../models/User.model.js";
 import bcrypt from "bcrypt";
 import { ServerError } from "../manejarErrorCustom.js";
+import cloudinary from "cloudinary";
+
+cloudinary.v2.config({
+    cloud_name: process.env.CLOUDINARY_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_SECRET
+});
 
 export const updateUser = async (req, res, next) => {
     try {
@@ -64,25 +71,27 @@ export const updateAvatar = async (req, res, next) => {
         const userId = req.user._id;
 
         if (!req.file) {
-            return res.status(400).json({
-                ok: false,
-                message: "No se envió ningún archivo"
-            });
+            return res.status(400).json({ ok: false, message: "No se envió ningún archivo" });
         }
 
-        const newAvatarPath = "https://proyecto-final-backend-utn-three.vercel.app/uploads/" + req.file.filename;
+        // Subimos el buffer a Cloudinary
+        const result = await cloudinary.v2.uploader.upload_stream(
+            { folder: "avatars" },
+            async (error, result) => {
+                if (error) return next(error);
 
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            { avatar: newAvatarPath },
-            { new: true }
-        ).select("_id username email avatar");
+                const updatedUser = await User.findByIdAndUpdate(
+                    userId,
+                    { avatar: result.secure_url },
+                    { new: true }
+                ).select("_id username email avatar");
 
-        res.json({
-            ok: true,
-            avatar: updatedUser.avatar,
-            user: updatedUser
-        });
+                res.json({ ok: true, avatar: updatedUser.avatar, user: updatedUser });
+            }
+        );
+
+        result.end(req.file.buffer);
+
     } catch (error) {
         next(error);
     }

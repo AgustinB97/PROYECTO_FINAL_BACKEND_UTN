@@ -4,10 +4,18 @@ import { ServerError } from "../manejarErrorCustom.js";
 import UserRepository from "../repositories/user.repository.js";
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import cloudinary from "cloudinary";
 
+
+
+cloudinary.v2.config({
+    cloud_name: process.env.CLOUDINARY_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_SECRET
+});
 
 class AuthService {
-    static async register({ username, email, password, avatar }) {
+    static async register({ username, email, password, avatarFile, avatarUrl }) {
 
         const user = await UserRepository.getByEmail(email);
         if (user) {
@@ -15,7 +23,21 @@ class AuthService {
         }
 
         const password_hashed = await bcrypt.hash(password, 12);
-        const finalAvatar = avatar
+        let finalAvatar = avatarUrl || "default.png";
+
+        if (avatarFile) {
+            const result = await new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.v2.uploader.upload_stream(
+                    { folder: "avatars" },
+                    (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    }
+                );
+                uploadStream.end(avatarFile.buffer);
+            });
+            finalAvatar = result.secure_url;
+        }
 
         const user_created = await UserRepository.create({
             username,
@@ -107,7 +129,7 @@ class AuthService {
         return {
             auth_token,
             user: {
-                _id: user_found._id, 
+                _id: user_found._id,
                 username: user_found.username,
                 email: user_found.email,
                 avatar: user_found.avatar
