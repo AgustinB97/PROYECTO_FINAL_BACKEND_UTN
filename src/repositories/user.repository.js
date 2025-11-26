@@ -2,11 +2,10 @@ import User from "../models/User.model.js";
 
 class UserRepository {
 
-    // CREA un usuario nuevo
-    static async create({ name, email, password, avatar }) {
+    static async create({ username, email, password, avatar }) {
         try {
             const user_created = await User.create({
-                name,
+                username,
                 email,
                 password,
                 avatar,
@@ -23,7 +22,6 @@ class UserRepository {
         }
     }
 
-    // OBTIENE todos los usuarios
     static async getAll() {
         try {
             const users = await User.find();
@@ -34,7 +32,6 @@ class UserRepository {
         }
     }
 
-    // BUSCA por ID
     static async getById(id_user) {
         try {
             const user_found = await User.findById(id_user);
@@ -45,7 +42,6 @@ class UserRepository {
         }
     }
 
-    // BUSCA por EMAIL
     static async getByEmail(email) {
         try {
             const user_found = await User.findOne({ email });
@@ -56,7 +52,6 @@ class UserRepository {
         }
     }
 
-    // BORRAR usuario
     static async deleteById(id_user) {
         try {
             const result = await User.findOneAndDelete({ _id: id_user });
@@ -74,7 +69,6 @@ class UserRepository {
         }
     }
 
-    // ACTUALIZAR usuario
     static async updateById(id_user, update_user) {
         try {
             const result = await User.findByIdAndUpdate(id_user, update_user, { new: true });

@@ -1,35 +1,209 @@
-import chatService from "../services/chat.service.js";
-import { CustomError } from "../manejarErrorCustom.js";
+import ChatService from "../services/chat.service.js";
+import Chat from "../models/Chat.model.js";
+import Message from "../models/Messages.model.js";
+import { io } from "../main2.js";
 
 class ChatController {
-    async addMessage(req, res, next) {
+
+    async createOrGetPrivate(req, res) {
         try {
-            const chat = await chatService.addMessage(req.body);
-            return res.status(201).json({ success: true, chat });
-        } catch (err) {
-            next(err);
+            const { userAId, userBId } = req.body;
+            const chat = await ChatService.createOrGetPrivateChat(userAId, userBId);
+
+            io.to(userAId).emit("new_chat", chat);
+            io.to(userBId).emit("new_chat", chat);
+
+            return res.status(200).json({ ok: true, chat });
+        } catch (error) {
+            return res.status(error.status || 500).json({ ok: false, message: error.message });
         }
     }
 
-    async getChat(req, res, next) {
+
+    async createGroup(req, res) {
         try {
-            const { userId, contactId } = req.params;
+            const { name, ownerId, participants = [], avatar } = req.body;
+            const group = await ChatService.createGroup({ name, ownerId, participants, avatar });
+            const allMembers = [ownerId, ...participants];
+            allMembers.forEach(userId => {
+                io.to(userId).emit("new_chat", group);
+            });
 
-            if (!userId || !contactId) {
-                throw new CustomError("Faltan parámetros", 400);
-            }
+            return res.status(201).json({ ok: true, group });
+        } catch (error) {
+            return res.status(error.status || 500).json({ ok: false, message: error.message });
+        }
+    }
 
-            const chat = await chatService.getChat(userId, contactId);
+
+    async getUserChats(req, res) {
+        try {
+            const { userId } = req.params;
+            const chats = await ChatService.getChatsByUser(userId);
+            return res.json({ ok: true, chats });
+        } catch (error) {
+            return res.status(error.status || 500).json({ ok: false, message: error.message });
+        }
+    }
+
+    async getChatById(req, res) {
+        try {
+            const { chatId } = req.params;
+            const chat = await Chat.findById(chatId)
+                .populate("members", "_id username avatar")
+                .populate("admins", "_id username avatar")
+                .populate("last_message");
 
             if (!chat) {
-                return res.status(404).json({ success: false, message: "Chat no encontrado" });
+                return res.status(404).json({
+                    ok: false,
+                    message: "Chat no encontrado"
+                });
             }
 
-            return res.json({ success: true, chat });
+            const messages = await Message.find({ chatId })
+                .populate("sender", "_id username avatar")
+                .sort({ createdAt: 1 });
+
+            return res.json({
+                ok: true,
+                chat,
+                messages
+            });
+
         } catch (err) {
-            next(err);
+            console.error("ERROR getChatById:", err);
+            return res.status(500).json({
+                ok: false,
+                message: "Error interno"
+            });
         }
     }
+
+
+    async addUser(req, res) {
+        try {
+            const { chatId } = req.params;
+            const { userId } = req.body;
+            const updated = await ChatService.addUserToGroup(chatId, userId);
+            return res.json({ ok: true, group: updated });
+        } catch (error) {
+            return res.status(error.status || 500).json({ ok: false, message: error.message });
+        }
+    }
+
+
+    async removeUser(req, res) {
+        try {
+            const { chatId } = req.params;
+            const { userId } = req.body;
+            const updated = await ChatService.removeUserFromGroup(chatId, userId);
+            return res.json({ ok: true, group: updated });
+        } catch (error) {
+            return res.status(error.status || 500).json({ ok: false, message: error.message });
+        }
+    }
+
+
+    async sendMessage(req, res) {
+        try {
+            const { senderId, chatId, content, type } = req.body;
+
+            if (!senderId || !chatId || !content) {
+                return res.status(400).json({
+                    ok: false,
+                    message: "Faltan datos obligatorios"
+                });
+            }
+
+            const newMessage = await Message.create({
+                sender: senderId,
+                chatId,
+                type: type || "text",
+                content
+            });
+
+            const populatedMsg = await Message.findById(newMessage._id)
+                .populate("sender", "_id username avatar")
+                .populate("chatId", "_id name members avatar");
+
+            await Chat.findByIdAndUpdate(chatId, {
+                last_message: newMessage._id
+            });
+
+            io.to(chatId).emit("receive_message", populatedMsg);
+
+            return res.status(201).json({
+                ok: true,
+                message: populatedMsg
+            });
+
+        } catch (error) {
+            console.error("ERROR sendMessage:", error);
+            return res.status(500).json({
+                ok: false,
+                message: "Error enviando mensaje"
+            });
+        }
+    }
+
+    async getMessages(req, res) {
+        try {
+            const { chatId } = req.params;
+            const { limit = 100, skip = 0 } = req.query;
+            const messages = await ChatService.getMessages(chatId, limit, skip);
+            return res.json({ ok: true, messages });
+        } catch (error) {
+            return res.status(error.status || 500).json({ ok: false, message: error.message });
+        }
+    }
+
+    async getLastMessage(req, res) {
+        try {
+            const { chatId } = req.params;
+            const last = await ChatService.getLastMessage(chatId);
+            return res.json({ ok: true, lastMessage: last });
+        } catch (error) {
+            return res.status(error.status || 500).json({ ok: false, message: error.message });
+        }
+    }
+
+    async deleteMessage(req, res) {
+        try {
+            const messageId = req.params.id;
+
+            const msg = await Message.findById(messageId);
+            if (!msg) return res.status(404).json({ ok: false, message: "Mensaje no encontrado" });
+
+            const chatId = msg.chatId;
+
+            await Message.findByIdAndDelete(messageId);
+
+            const lastMsg = await Message.findOne({ chatId })
+                .sort({ createdAt: -1 })
+                .populate("sender", "_id username avatar")
+                .populate("chatId", "_id name members avatar");
+
+            await Chat.findByIdAndUpdate(chatId, {
+                last_message: lastMsg ? lastMsg._id : null
+            });
+
+            io.to(chatId).emit("message_deleted", {
+                messageId: msg._id,
+                chatId,
+                last_message: lastMsg || null
+            });
+
+            return res.json({ ok: true, messageId: msg._id });
+
+        } catch (err) {
+            console.error("Error borrando mensaje:", err);
+            return res.status(500).json({ ok: false, message: "Error al borrar mensaje" });
+        }
+    }
+
+
+
 }
 
 export default new ChatController();

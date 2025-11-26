@@ -1,115 +1,92 @@
 import ENVIRONMENT from "../config/environment.config.js";
 import { ServerError } from "../manejarErrorCustom.js";
 import AuthService from "../services/auth.service.js";
+import path from "path";
+import fs from "fs";
+import axios from "axios";
+
+async function saveExternalImage(url) {
+    try {
+        const fileName = Date.now() + ".jpg";
+        const uploadDir = path.resolve("uploads");
+        const uploadPath = path.join(uploadDir, fileName);
+
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir);
+        }
+
+        const response = await axios({
+            url,
+            responseType: "stream",
+        });
+
+        return new Promise((resolve, reject) => {
+            const writer = fs.createWriteStream(uploadPath);
+
+            response.data.pipe(writer);
+
+            writer.on("finish", () => resolve(`uploads/${fileName}`));
+            writer.on("error", reject);
+        });
+    } catch (err) {
+        console.error("Error guardando imagen externa:", err);
+        return null;
+    }
+}
 
 
 export class AuthController {
-    /*     static async register(request, response) {
-            try {
-                const { name, email, password, avatar } = request.body
-                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-                const errors = []
-                if (!email || !emailRegex.test(email)) {
-                    errors.push(' email no valido')
-                }
-                if (typeof name !== 'string' || name.length < 4) {
-                    errors.push(' name no valido')
-                }
-                if (typeof password !== 'string' || password.length < 6) {
-                    errors.push(' password no valida')
-                }
-    
-                if (errors.length > 0) {
-                    throw new ServerError(400, errors.join(','))// el metodo .join transforma un array en string, y el (',') separa los elementos en este caso con un ,
-                }
-                
-                //Validar el name (que sea string, mayor a 4 caracteres)
-                //Validar el password (que seas string mayor a 6 caracteres)
-                
-    
-                await AuthService.register({email, password, name, avatar});
-    
-    
-                response.status(201).send({
-                    ok: true,
-                    message: 'usuario registrado'
-    
-                })
-            }
-            catch (error) {
-                if (error.status) {
-    
-                    response.send({
-                        ok: false,
-                        message: error.message,
-                        status: error.status
-                    })
-                }
-                else {
-                    console.error(
-                        'ERROR AL REGISTRAR', error
-                    )
-                    response.send({
-                        ok: false,
-                        message: 'error interno del servidor',
-                        status: 500
-                    })
-                }
-            }
-        } */
-    static async register(request, response) {
-        try {
-            const { name, email, password, avatar } = request.body
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            const errors = []
-            if (!email || !emailRegex.test(email)) {
-                errors.push(' email no valido')
-            }
-            if (typeof name !== 'string' || name.length < 4) {
-                errors.push(' name no valido')
-            }
-            if (typeof password !== 'string' || password.length < 6) {
-                errors.push(' password no valida')
-            }
+static async register(request, response) {
+    try {
+        const { username, email, password, avatar } = request.body;
 
-            if (errors.length > 0) {
-                throw new ServerError(400, errors.join(','))// el metodo .join transforma un array en string, y el (',') separa los elementos en este caso con un ,
-            }
-            /* 
-            Validar el name (que sea string, mayor a 4 caracteres)
-            Validar el password (que seas string mayor a 6 caracteres)
-            */
+        let finalAvatar = null;
 
-            await AuthService.register({ email, password, name, avatar });
-
-
-            response.status(201).send({
-                ok: true,
-                message: 'usuario registrado'
-
-            })
+        if (request.file) {
+            finalAvatar = `${ENVIRONMENT.BACKEND_URL}/uploads/${request.file.filename}`;
         }
-        catch (error) {
-            if (error.status) {
 
-                response.send({
-                    ok: false,
-                    message: error.message,
-                    status: error.status
-                })
-            }
-            else {
-                console.error(
-                    'ERROR AL REGISTRAR', error
-                )
-                response.send({
-                    ok: false,
-                    message: 'error interno del servidor',
-                    status: 500
-                })
+        else if (avatar && avatar.startsWith("http")) {
+            const savedPath = await saveExternalImage(avatar);
+            if (savedPath) {
+                finalAvatar = `${ENVIRONMENT.BACKEND_URL}/${savedPath}`;
             }
         }
+
+        else {
+            finalAvatar = `${ENVIRONMENT.BACKEND_URL}/uploads/default.png`;
+        }
+
+        await AuthService.register({
+            username,
+            email,
+            password,
+            avatar: finalAvatar,
+        });
+
+        response.status(201).send({
+            ok: true,
+            message: "usuario registrado",
+        });
+
+    } catch (error) {
+        if (error.status) {
+            return response.send({
+                ok: false,
+                message: error.message,
+                status: error.status,
+            });
+        }
+        console.error("ERROR AL REGISTRAR", error);
+        return response.send({
+            ok: false,
+            message: "error interno del servidor",
+            status: 500,
+        });
     }
+}
+
+
 
     static async verifyEmail(request, response) {
         try {
@@ -120,22 +97,11 @@ export class AuthController {
             response.redirect(
                 ENVIRONMENT.URL_FRONTEND + '/login?from=verified_email'
             )
-            /*             response.json({
-                            ok: true,
-                            message: 'usuario verificado correctamente',
-                            status: 200
-                        }) */
 
         }
         catch (error) {
 
-            // desp hacer  que si hay algun fallo reenvie el mail de validacion
             if (error.status) {
-                /*response.send({
-                            ok: false,
-                            message: error.message,
-                            status: error.status
-                        }) */
                 response.send(
                     `<h1>${error.message}</h1>`
                 )
@@ -143,11 +109,6 @@ export class AuthController {
             else {
                 console.error('ERROR AL REGISTRAR', error)
 
-                /*response.send({
-                                    ok: false,
-                                    message: 'error interno del servidor',
-                                    status: 500
-                                }) */
                 response.send(
                     `<h1>Error en el servidor, intentelo mas tarde </h1>`
                 )
@@ -157,36 +118,33 @@ export class AuthController {
 
     static async login(request, response) {
         try {
-            const { email, password } = request.body
-            const { auth_token } = await AuthService.login(email, password)
-            return response.json(
-                {
-                    ok: true,
-                    message: 'Usuario logueado con exito',
-                    body: {
-                        auth_token
-                    }
+            const { email, password } = request.body;
+
+            const { auth_token, user } = await AuthService.login(email, password);
+
+            return response.json({
+                ok: true,
+                message: 'Usuario logueado con exito',
+                body: {
+                    auth_token,
+                    user
                 }
-            )
-        }
-        catch (error) {
+            });
+
+        } catch (error) {
             if (error.status) {
-                return response.send({
+                return response.status(error.status).json({
                     ok: false,
-                    message: error.message,
-                    status: error.status
-                })
+                    message: error.message
+                });
             }
-            else {
-                console.error(
-                    'error al registrar', error
-                )
-                return response.send({
-                    ok: false,
-                    message: 'error interno del servidor',
-                    status: 500
-                })
-            }
+
+            console.error('ERROR AL LOGUEAR', error);
+
+            return response.status(500).json({
+                ok: false,
+                message: 'error interno del servidor'
+            });
         }
     }
 }

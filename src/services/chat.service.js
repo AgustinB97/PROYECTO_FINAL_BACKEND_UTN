@@ -1,41 +1,174 @@
-import chatRepository from "../repositories/chat.repository.js";
-import { addMessageSchema } from "../schemas/message.schema.js";
+import Chat from "../models/Chat.model.js";
+import Message from "../models/Messages.model.js";
+import User from "../models/User.model.js";
 import { CustomError } from "../manejarErrorCustom.js";
 
 class ChatService {
-    async addMessage(data) {
-        const { error } = addMessageSchema.validate(data);
-        if (error) {
-            throw new CustomError(error.details[0].message, 400);
-        }
 
-        const { participants, text, senderId } = data;
+  static async createOrGetPrivateChat(userAId, userBId) {
+    if (!userAId || !userBId)
+      throw new CustomError("Faltan userIds", 400);
 
-        // buscar o crear el chat
-        let chat = await chatRepository.findByParticipants(participants);
-        if (!chat) {
-            chat = await chatRepository.createChat(participants);
-        }
+    if (String(userAId) === String(userBId))
+      throw new CustomError("No puedes crear un chat contigo mismo", 400);
 
-        const now = new Date();
-        const hour = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    let chat = await Chat.findOne({
+      isGroup: false,
+      members: { $all: [userAId, userBId], $size: 2 }
+    })
+      .populate("members", "username avatar")
+      .populate({
+        path: "last_message",
+        populate: { path: "sender", select: "username avatar" }
+      });
 
-        const message = {
-            senderId,
-            text,
-            hour,
-            createdAt: now
-        };
+    if (!chat) {
+      chat = await Chat.create({
+        isGroup: false,
+        members: [userAId, userBId]
+      });
 
-        return chatRepository.pushMessage(chat._id, message);
+      chat = await Chat.findById(chat._id).populate("members", "username avatar");
     }
 
+    return chat;
+  }
 
-    async getChat(userId, contactId) {
-        const participants = [userId, contactId];
-        const chat = await chatRepository.findByParticipants(participants);
-        return chat;
+  static async createGroup({ name, ownerId, participants = [], avatar = null }) {
+    if (!name || !ownerId)
+      throw new CustomError("Faltan datos para crear el grupo", 400);
+
+    const owner = await User.findById(ownerId);
+    if (!owner) throw new CustomError("Owner no existe", 404);
+
+    const unique = [...new Set([ownerId, ...participants])];
+
+    const group = await Chat.create({
+      name,
+      isGroup: true,
+      admins: [ownerId],
+      members: unique,
+      avatar
+    });
+
+    return Chat.findById(group._id)
+      .populate("members", "username avatar")
+      .populate({
+        path: "last_message",
+        populate: { path: "sender", select: "username avatar" }
+      });
+  }
+
+  static async getChatsByUser(userId) {
+    if (!userId) throw new CustomError("Falta userId", 400);
+
+    return Chat.find({ members: userId })
+      .populate("members", "username avatar")
+      .populate({
+        path: "last_message",
+        populate: { path: "sender", select: "username avatar" }
+      })
+      .sort({ updatedAt: -1 });
+  }
+
+  static async getChatById(chatId) {
+    if (!chatId) throw new CustomError("Falta chatId", 400);
+
+    return Chat.findById(chatId)
+      .populate("members", "username avatar")
+      .populate({
+        path: "last_message",
+        populate: { path: "sender", select: "username avatar" }
+      });
+  }
+
+  static async addUserToGroup(chatId, userId) {
+    const chat = await Chat.findById(chatId);
+    if (!chat) throw new CustomError("Chat no encontrado", 404);
+    if (!chat.isGroup) throw new CustomError("No es un grupo", 400);
+
+    if (chat.members.includes(userId))
+      throw new CustomError("Usuario ya está en el grupo", 400);
+
+    chat.members.push(userId);
+    await chat.save();
+
+    return Chat.findById(chatId).populate("members", "username avatar");
+  }
+
+  static async removeUserFromGroup(chatId, userId) {
+    const chat = await Chat.findById(chatId);
+    if (!chat) throw new CustomError("Chat no encontrado", 404);
+    if (!chat.isGroup) throw new CustomError("No es un grupo", 400);
+
+    chat.members = chat.members.filter(m => String(m) !== String(userId));
+    await chat.save();
+
+    return Chat.findById(chatId).populate("members", "username avatar");
+  }
+
+  static async createMessage({ senderId, chatId, content, type = "text" }) {
+    if (!senderId || !chatId || !content)
+      throw new CustomError("Faltan datos para enviar mensaje", 400);
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) throw new CustomError("Chat no encontrado", 404);
+
+    if (!chat.members.some(m => String(m) === String(senderId)))
+      throw new CustomError("No eres miembro de este chat", 403);
+
+    const message = await Message.create({
+      chatId,
+      sender: senderId,
+      content,
+      type
+    });
+
+    return message;
+  }
+
+  static async getMessages(chatId, limit = 100, skip = 0) {
+    if (!chatId) throw new CustomError("Falta chatId", 400);
+
+    return Message.find({ chatId })
+      .populate("sender", "username avatar")
+      .sort({ createdAt: 1 })
+      .skip(Number(skip))
+      .limit(Number(limit));
+  }
+
+  static async getLastMessage(chatId) {
+    if (!chatId) throw new CustomError("Falta chatId", 400);
+
+    const chat = await Chat.findById(chatId)
+      .populate({
+        path: "last_message",
+        populate: { path: "sender", select: "username avatar" }
+      });
+
+    return chat?.last_message || null;
+  }
+
+  static async deleteMessage(messageId) {
+    const msg = await Message.findById(messageId);
+
+    if (!msg) {
+      return { ok: false, chatId: null, deleted: null };
     }
+
+    const chatId = msg.chatId;
+
+    await Message.findByIdAndDelete(messageId);
+
+    const last = await Message.findOne({ chatId }).sort({ createdAt: -1 });
+
+    await Chat.findByIdAndUpdate(chatId, {
+      last_message: last ? last._id : null
+    });
+
+    return { ok: true, chatId, deleted: messageId };
+  }
 }
 
-export default new ChatService();
+
+export default ChatService;

@@ -1,49 +1,95 @@
 import connectToMongoDB from "./config/configMongoDB.config.js";
-import express, { request, response } from "express";
+import express from "express";
 import { authRouter } from "./routes/auth.router.js";
-import workspaceRouter from "./routes/workspace.router.js";
-import handlebars from "express-handlebars";
 import ENVIRONMENT from "./config/environment.config.js";
-import mailTransporter from "./config/mailTransporter.config.js";
-import cors from 'cors'
+import cors from 'cors';
 import chatRouter from "./routes/chat.routes.js";
 import userRouter from "./routes/user.routes.js";
-import messageRoutes from "./routes/message.routes.js";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import ChatService from "./services/chat.service.js";
 
 
 connectToMongoDB();
 
 const app = express();
 
-//con cors haces tu api publica
-app.use(cors())
+const httpServer = createServer(app);
 
+export const io = new Server(httpServer, {
+    cors: {
+        origin: ENVIRONMENT.URL_FRONTEND,
+        credentials: true
+    }
+});
+
+app.use(cors({
+    origin: ENVIRONMENT.URL_FRONTEND,
+    credentials: true
+}));
 
 app.use(express.json());
 
+app.get("/", (req, res) => res.send("API corriendo correctamente"));
+app.use("/api/auth", authRouter);
+app.use("/api/users", userRouter);
+app.use("/api/chat", chatRouter);
 
-/* //CONFIGURACION DE HANDLEBARS
-//el motor de plantillas de mi app es HandleBars
-app.engine('handlebars', handlebars.engine())
+app.use("/uploads", express.static("uploads"));
 
-//El motor de vistas es hanldebars
-app.set('view engine', 'handlebars')
 
-app.set('views', './views')
- */
-app.use('/api/auth', authRouter);
-app.use('/api/workspace', workspaceRouter)
-app.get("/", (req, res) => res.send(" API corriendo correctamente"))
-app.use("/api/chat", chatRouter)
-app.use("/api/users", userRouter)
-app.use("/api/chat", messageRoutes);
+io.on("connection", (socket) => {
+    console.log("Usuario conectado:", socket.id);
+
+    socket.on("register_user", (userId) => {
+        socket.join(userId);
+        console.log(`Socket ${socket.id} se unió a la sala del usuario ${userId}`);
+    });
+
+    socket.on("join_chat", (chatId) => {
+        socket.join(chatId);
+        console.log(`socket ${socket.id} entró al chat ${chatId}`);
+    });
+
+    socket.on("send_message", (msgData) => {
+        const { chatId } = msgData;
+
+        io.to(chatId).emit("receive_message", {
+            chatId,
+            message: msgData
+        });
+    });
+
+    socket.on("delete_message", async ({ messageId }) => {
+        try {
+            const result = await ChatService.deleteMessage(messageId);
+
+            if (result.chatId) {
+                io.to(result.chatId).emit("message_deleted", {
+                    messageId: result.deleted,
+                    chatId: result.chatId,
+                    last_message: await ChatService.getLastMessage(result.chatId)
+                });
+            }
+
+        } catch (err) {
+            console.error("Error en socket delete_message:", err.message);
+            socket.emit("error_delete_message", { message: err.message });
+        }
+    });
+
+
+
+    socket.on("disconnect", () => {
+        console.log("Usuario desconectado:", socket.id);
+    });
+});
 
 if (process.env.NODE_ENV !== "production") {
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(` Server corriendo en puerto ${PORT}`));
+    const PORT = process.env.PORT || 8080;
+    httpServer.listen(PORT, () =>
+        console.log(`🔥 Server + Socket corriendo en puerto ${PORT}`)
+    );
 }
-/* app.listen(PORT, () => { console.log(`ON in ${PORT}`) }) */
 
-
-// las capas basicas van a ser services routes repository middlewares controllers
-export default app
+export default app;

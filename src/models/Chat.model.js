@@ -1,17 +1,57 @@
 import mongoose from "mongoose";
 
-const messageSchema = new mongoose.Schema({
-    senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    text: { type: String, required: true },
-    hour: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now }
-});
+const ChatSchema = new mongoose.Schema({
 
-const chatSchema = new mongoose.Schema({
-    participants: [
-        { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }
-    ],
-    messages: [messageSchema]
+  name: {
+    type: String,
+    default: null
+  },
+
+  isGroup: {
+    type: Boolean,
+    default: false
+  },
+
+  members: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    }
+  ],
+
+  admins: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
+
+  last_message: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Message",
+    default: null
+  },
+
+  avatar: {
+    type: String,
+    default: null
+  },
+
+  description: {
+    type: String,
+    default: ""
+  }
+
 }, { timestamps: true });
 
-export default mongoose.model("Chat", chatSchema);
+
+// 🟦 VIRTUAL: determina si es un chat privado sin guardar en DB
+ChatSchema.virtual("isPrivate").get(function () {
+  return !this.isGroup && this.members.length === 2;
+});
+
+// 🟦 Índices optimizados
+ChatSchema.index({ members: 1 });
+
+export default mongoose.model("Chat", ChatSchema);

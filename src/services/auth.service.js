@@ -7,38 +7,35 @@ import jwt from 'jsonwebtoken'
 
 
 class AuthService {
-    static async register(name, email, password, avatar) {
+    static async register({ username, email, password, avatar }) {
 
         const user = await UserRepository.getByEmail(email);
         if (user) {
             throw new ServerError(400, 'email ya en uso');
         }
 
-        // 2. Hashear password
         const password_hashed = await bcrypt.hash(password, 12);
+        const finalAvatar = avatar
 
-        // 3. Crear usuario en DB (ahora sí incluye avatar)
         const user_created = await UserRepository.create({
-            name,
+            username,
             email,
             password: password_hashed,
-            avatar: avatar || "default.png",   // 👈 Añadido
+            avatar: finalAvatar || "default.png",
             active: true,
             verified_email: false
         });
 
         const user_id_created = user_created._id;
 
-        // 4. Crear token de verificación
         const verification_token = jwt.sign(
             {
-                email: email,
+                email,
                 user_id: user_id_created
             },
             ENVIRONMENT.JWT_SECRET
         );
 
-        // 5. Enviar email
         await mailTransporter.sendMail({
             from: ENVIRONMENT.GMAIL_USER,
             to: email,
@@ -51,6 +48,7 @@ class AuthService {
 
         return user_created;
     }
+
 
 
 
@@ -82,40 +80,41 @@ class AuthService {
 
     static async login(email, password) {
 
-        const user_found = await UserRepository.getByEmail(email)
+        const user_found = await UserRepository.getByEmail(email);
         if (!user_found) {
-            throw new ServerError(404, 'usuario o mail no validos')
-        }
-        if (!user_found.verified_email) {
-            throw new ServerError(401, 'usuario con mail no verificado')
+            throw new ServerError(404, 'usuario o mail no validos');
         }
 
-        const is_same_password = await bcrypt.compare(password, user_found.password)
+        if (!user_found.verified_email) {
+            throw new ServerError(401, 'usuario con mail no verificado');
+        }
+
+        const is_same_password = await bcrypt.compare(password, user_found.password);
         if (!is_same_password) {
-            throw new ServerError(401, 'usuario o mail no validos')
+            throw new ServerError(401, 'usuario o mail no validos');
         }
 
         const auth_token = jwt.sign(
             {
-                name: user_found.name,
+                _id: user_found._id,
+                username: user_found.username,
                 email: user_found.email,
-                id: user_found.id
+                avatar: user_found.avatar
             },
             ENVIRONMENT.JWT_SECRET
-        )
+        );
 
         return {
-            ok: true,
             auth_token,
             user: {
-                id: user_found._id,
-                name: user_found.name,
+                _id: user_found._id, 
+                username: user_found.username,
                 email: user_found.email,
                 avatar: user_found.avatar
             }
-        }
-
+        };
     }
+
 }
 
 export default AuthService

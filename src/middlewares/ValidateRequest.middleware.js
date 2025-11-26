@@ -1,7 +1,5 @@
 
-import Joi from 'joi';
-
-export const validateRequest = (schema) => {
+const validateRequest = (schema) => {
     return (req, res, next) => {
         const { error, value } = schema.validate(req.body, { 
             abortEarly: false,
@@ -22,3 +20,5 @@ export const validateRequest = (schema) => {
         next();
     };
 };
+
+export default validateRequest
