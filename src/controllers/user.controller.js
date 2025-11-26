@@ -70,7 +70,7 @@ export const updateAvatar = async (req, res, next) => {
             });
         }
 
-        const newAvatarPath = "/uploads/" + req.file.filename;
+        const newAvatarPath = "https://proyecto-final-backend-utn-three.vercel.app/uploads/" + req.file.filename;
 
         const updatedUser = await User.findByIdAndUpdate(
             userId,
