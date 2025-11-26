@@ -1,7 +1,7 @@
 import ChatService from "../services/chat.service.js";
 import Chat from "../models/Chat.model.js";
 import Message from "../models/Messages.model.js";
-import { io } from "../main2.js";
+import { io, notifyUsersChatsUpdated } from "../main2.js";
 
 class ChatController {
 
