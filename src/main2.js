@@ -18,13 +18,17 @@ const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
     cors: {
-        origin: [ENVIRONMENT.URL_FRONTEND, 'https://proyecto-final-frontend-utn-iota.vercel.app'],
+        origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-git-main-agustins-projects-8c88d01e.vercel.app",
+            "https://proyecto-final-frontend-utn.vercel.app"],
+        methods: ["GET", "POST"],
         credentials: true
     }
 });
 
 app.use(cors({
-    origin: [ENVIRONMENT.URL_FRONTEND, 'https://proyecto-final-frontend-utn-iota.vercel.app'],
+    origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-git-main-agustins-projects-8c88d01e.vercel.app",
+        "https://proyecto-final-frontend-utn.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     credentials: true
 }));
 
@@ -103,7 +107,7 @@ io.on("connection", (socket) => {
 });
 
 if (process.env.NODE_ENV !== "production") {
-    const PORT = process.env.PORT ;
+    const PORT = process.env.PORT;
     httpServer.listen(PORT, () =>
         console.log(`🔥 Server + Socket corriendo en puerto ${PORT}`)
     );

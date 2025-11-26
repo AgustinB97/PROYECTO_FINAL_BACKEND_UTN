@@ -18,7 +18,6 @@ const MessageSchema = new mongoose.Schema({
     default: null
   },
 
-  // Para mensajes multimedia (opcional)
   mediaUrl: {
     type: String,
     default: null
