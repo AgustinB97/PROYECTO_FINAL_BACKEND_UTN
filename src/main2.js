@@ -18,14 +18,14 @@ const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
     cors: {
-        origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-iota.vercel.app/",
+        origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-iota.vercel.app",
             "https://proyecto-final-frontend-utn.vercel.app"],
         credentials: true
     }
 });
 
 app.use(cors({
-    origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-iota.vercel.app/",
+    origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-iota.vercel.app",
         "https://proyecto-final-frontend-utn.vercel.app"],
     credentials: true
 }));
