@@ -125,7 +125,7 @@ class ChatController {
             });
 
             const chat = await Chat.findById(chatId).populate("members");
-            
+
             const populatedMsg = await Message.findById(newMessage._id)
                 .populate("sender", "_id username avatar")
                 .populate("chatId", "_id name members avatar");
@@ -188,9 +188,11 @@ class ChatController {
                 .populate("sender", "_id username avatar")
                 .populate("chatId", "_id name members avatar");
 
-            await Chat.findByIdAndUpdate(chatId, {
-                last_message: lastMsg ? lastMsg._id : null
-            });
+            const chat = await Chat.findByIdAndUpdate(
+                chatId,
+                { last_message: lastMsg ? lastMsg._id : null },
+                { new: true }
+            );
 
             notifyUsersChatsUpdated(chat, io);
 
