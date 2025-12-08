@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema(
         }, 
         avatar:{
             type: String,
-            default: "https://previews.123rf.com/images/thesomeday123/thesomeday1231712/thesomeday123171200009/91087331-default-avatar-profile-icon-for-male-grey-photo-placeholder-illustrations-vector.jpg"
         },
         active:{
             type: Boolean,

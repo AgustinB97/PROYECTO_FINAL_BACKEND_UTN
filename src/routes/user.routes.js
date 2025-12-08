@@ -18,7 +18,7 @@ router.get("/", async (req, res, next) => {
                 _id: u._id,
                 username: u.username,
                 email: u.email,
-                avatar: u.avatar || "default.png"
+                avatar: u.avatar
             }))
         });
 
