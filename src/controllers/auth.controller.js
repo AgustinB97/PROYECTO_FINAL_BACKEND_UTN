@@ -1,90 +1,60 @@
 import ENVIRONMENT from "../config/environment.config.js";
 import { ServerError } from "../manejarErrorCustom.js";
 import AuthService from "../services/auth.service.js";
-import path from "path";
-import fs from "fs";
-import axios from "axios";
 
-async function saveExternalImage(url) {
-    try {
-        const fileName = Date.now() + ".jpg";
-        const uploadDir = path.resolve("uploads");
-        const uploadPath = path.join(uploadDir, fileName);
-
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
-        }
-
-        const response = await axios({
-            url,
-            responseType: "stream",
-        });
-
-        return new Promise((resolve, reject) => {
-            const writer = fs.createWriteStream(uploadPath);
-
-            response.data.pipe(writer);
-
-            writer.on("finish", () => resolve(`https://proyecto-final-backend-utn-three.vercel.app/uploads/${fileName}`));
-            writer.on("error", reject);
-        });
-    } catch (err) {
-        console.error("Error guardando imagen externa:", err);
-        return null;
-    }
-}
 
 
 export class AuthController {
-static async register(request, response) {
-    try {
-        const { username, email, password, avatar } = request.body;
+    static async register(request, response) {
+        try {
+            const { username, email, password, avatar } = request.body;
 
-        let finalAvatar = null;
+            let finalAvatar = null;
 
-        if (request.file) {
-            finalAvatar = `${ENVIRONMENT.BACKEND_URL}/uploads/${request.file.filename}`;
-        }
-
-        else if (avatar && avatar.startsWith("http")) {
-            const savedPath = await saveExternalImage(avatar);
-            if (savedPath) {
-                finalAvatar = `${ENVIRONMENT.BACKEND_URL}/${savedPath}`;
+            if (request.file) {
+                finalAvatar = await new Promise((resolve, reject) => {
+                    const upload = cloudinary.uploader.upload_stream(
+                        { folder: "avatars/users" },
+                        (error, result) => {
+                            if (error) reject(error);
+                            else resolve(result.secure_url);
+                        }
+                    );
+                    upload.end(request.file.buffer);
+                });
             }
-        }
+            if (!finalAvatar) {
+                finalAvatar = ENVIRONMENT.DEFAULT_AVATAR_URL;
+            }
 
-        else {
-            finalAvatar = `${ENVIRONMENT.BACKEND_URL}/uploads/default.png`;
-        }
+            await AuthService.register({
+                username,
+                email,
+                password,
+                avatar: finalAvatar,
+            });
 
-        await AuthService.register({
-            username,
-            email,
-            password,
-            avatar: finalAvatar,
-        });
+            response.status(201).send({
+                ok: true,
+                message: "usuario registrado",
+            });
 
-        response.status(201).send({
-            ok: true,
-            message: "usuario registrado",
-        });
-
-    } catch (error) {
-        if (error.status) {
+        } catch (error) {
+            if (error.status) {
+                return response.send({
+                    ok: false,
+                    message: error.message,
+                    status: error.status,
+                });
+            }
+            console.error("ERROR AL REGISTRAR", error);
             return response.send({
                 ok: false,
-                message: error.message,
-                status: error.status,
+                message: "error interno del servidor",
+                status: 500,
             });
         }
-        console.error("ERROR AL REGISTRAR", error);
-        return response.send({
-            ok: false,
-            message: "error interno del servidor",
-            status: 500,
-        });
     }
-}
 
 
 
