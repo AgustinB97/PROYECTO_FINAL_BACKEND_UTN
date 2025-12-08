@@ -3,58 +3,36 @@ import { ServerError } from "../manejarErrorCustom.js";
 import AuthService from "../services/auth.service.js";
 
 
-
 export class AuthController {
-    static async register(request, response) {
+
+    static async register(req, res) {
         try {
-            const { username, email, password, avatar } = request.body;
+            const { username, email, password } = req.body;
 
-            let finalAvatar = null;
-
-            if (request.file) {
-                finalAvatar = await new Promise((resolve, reject) => {
-                    const upload = cloudinary.uploader.upload_stream(
-                        { folder: "avatars/users" },
-                        (error, result) => {
-                            if (error) reject(error);
-                            else resolve(result.secure_url);
-                        }
-                    );
-                    upload.end(request.file.buffer);
-                });
-            }
-            if (!finalAvatar) {
-                finalAvatar = ENVIRONMENT.DEFAULT_AVATAR_URL;
-            }
-
-            await AuthService.register({
+            const user = await AuthService.register({
                 username,
                 email,
                 password,
-                avatar: finalAvatar,
+                avatarFile: req.file,
             });
 
-            response.status(201).send({
+            res.status(201).send({
                 ok: true,
                 message: "usuario registrado",
+                user
             });
 
         } catch (error) {
-            if (error.status) {
-                return response.send({
-                    ok: false,
-                    message: error.message,
-                    status: error.status,
-                });
-            }
             console.error("ERROR AL REGISTRAR", error);
-            return response.send({
+
+            return res.status(error.status || 500).send({
                 ok: false,
-                message: "error interno del servidor",
-                status: 500,
+                message: error.message || "error interno del servidor",
+                status: error.status || 500
             });
         }
     }
+
 
 
 

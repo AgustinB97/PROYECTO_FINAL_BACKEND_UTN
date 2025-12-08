@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken'
 import cloudinary from "../config/cloudinary.config.js";
 
 class AuthService {
-    static async register({ username, email, password, avatarFile, avatarUrl }) {
+    static async register({ username, email, password, avatarFile }) {
 
         const user = await UserRepository.getByEmail(email);
         if (user) {
@@ -15,12 +15,13 @@ class AuthService {
         }
 
         const password_hashed = await bcrypt.hash(password, 12);
-        let finalAvatar = avatarUrl ;
+
+        let finalAvatar = ENVIRONMENT.DEFAULT_AVATAR_URL
 
         if (avatarFile) {
             const result = await new Promise((resolve, reject) => {
                 const uploadStream = cloudinary.uploader.upload_stream(
-                    { folder: "avatars" },
+                    { folder: "avatars/users" },
                     (err, result) => {
                         if (err) reject(err);
                         else resolve(result);
@@ -28,6 +29,7 @@ class AuthService {
                 );
                 uploadStream.end(avatarFile.buffer);
             });
+            
             finalAvatar = result.secure_url;
         }
 
