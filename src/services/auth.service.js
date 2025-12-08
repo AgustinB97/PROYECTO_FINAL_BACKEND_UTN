@@ -15,7 +15,7 @@ class AuthService {
         }
 
         const password_hashed = await bcrypt.hash(password, 12);
-        let finalAvatar = avatarUrl || "default.png";
+        let finalAvatar = avatarUrl ;
 
         if (avatarFile) {
             const result = await new Promise((resolve, reject) => {
@@ -35,7 +35,7 @@ class AuthService {
             username,
             email,
             password: password_hashed,
-            avatar: finalAvatar || "default.png",
+            avatar: finalAvatar ,
             active: true,
             verified_email: false
         });
