@@ -20,6 +20,7 @@ export const io = new Server(httpServer, {
     cors: {
         origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-iota.vercel.app",
             "https://proyecto-final-frontend-utn.vercel.app"],
+        methods: ["GET", "POST"],
         credentials: true
     }
 });
@@ -27,6 +28,8 @@ export const io = new Server(httpServer, {
 app.use(cors({
     origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-iota.vercel.app",
         "https://proyecto-final-frontend-utn.vercel.app"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
 }));
 
