@@ -66,7 +66,11 @@ export const changePassword = async (req, res, next) => {
 
 export const updateAvatar = async (req, res, next) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user?._id || req.user_id;
+
+        if (!userId) {
+            return res.status(401).json({ ok: false, message: "Usuario no autenticado" });
+        }
 
         if (!req.file) {
             return res.status(400).json({ ok: false, message: "No se envió ningún archivo" });
@@ -93,7 +97,7 @@ export const updateAvatar = async (req, res, next) => {
             { new: true }
         ).select("_id username email avatar");
 
-        res.json({ ok: true, avatar: updatedUser.avatar, user: updatedUser });
+        return res.json({ ok: true, avatar: updatedUser.avatar, user: updatedUser });
 
     } catch (error) {
         next(error);

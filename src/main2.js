@@ -40,7 +40,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/chat", chatRouter);
 
-app.use("/uploads", express.static("uploads"));
+app.put("/uploads", express.static("uploads"));
 
 export const notifyUsersChatsUpdated = (chat, io) => {
     chat.members.forEach(member => {
