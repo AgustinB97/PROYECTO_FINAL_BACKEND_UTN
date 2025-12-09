@@ -140,17 +140,16 @@ class ChatService {
       .limit(Number(limit));
   }
 
-  static async getLastMessage(chatId) {
-    if (!chatId) throw new CustomError("Falta chatId", 400);
+static async getLastMessage(chatId) {
+  if (!chatId) throw new CustomError("Falta chatId", 400);
 
-    const chat = await Chat.findById(chatId)
-      .populate({
-        path: "last_message",
-        populate: { path: "sender", select: "username avatar" }
-      });
+  const lastMsg = await Message.findOne({ chat: chatId })
+    .sort({ createdAt: -1 })
+    .populate("sender", "username avatar");
 
-    return chat?.last_message || null;
-  }
+  return lastMsg || null;
+}
+
 
   static async deleteMessage(messageId) {
     const msg = await Message.findById(messageId);

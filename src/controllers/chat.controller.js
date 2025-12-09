@@ -202,13 +202,14 @@ class ChatController {
             const messageId = req.params.id;
 
             const msg = await Message.findById(messageId);
+
             if (!msg) return res.status(404).json({ ok: false, message: "Mensaje no encontrado" });
 
-            const chatId = msg.chatId;
+            const chatId = msg.chat.toString();
+            
+            await msg.deleteOne();
 
-            await Message.findByIdAndDelete(messageId);
-
-            const lastMsg = await Message.findOne({ chatId })
+            const lastMsg = await Message.findOne({ chat: chatId })
                 .sort({ createdAt: -1 })
                 .populate("sender", "_id username avatar")
                 .populate("chatId", "_id name members avatar");
