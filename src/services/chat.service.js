@@ -2,6 +2,7 @@ import Chat from "../models/Chat.model.js";
 import Message from "../models/Messages.model.js";
 import User from "../models/User.model.js";
 import { CustomError } from "../manejarErrorCustom.js";
+import ENVIRONMENT from "../config/environment.config.js";
 
 class ChatService {
 
@@ -43,12 +44,14 @@ class ChatService {
 
     const unique = [...new Set([ownerId, ...participants])];
 
+    const finalAvatar = avatar || ENVIRONMENT.DEFAULT_AVATAR_URL;
+
     const group = await Chat.create({
       name,
       isGroup: true,
       admins: [ownerId],
       members: unique,
-      avatar
+      avatar: finalAvatar
     });
 
     return Chat.findById(group._id)

@@ -46,12 +46,10 @@ const ChatSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-// 🟦 VIRTUAL: determina si es un chat privado sin guardar en DB
 ChatSchema.virtual("isPrivate").get(function () {
   return !this.isGroup && this.members.length === 2;
 });
 
-// 🟦 Índices optimizados
 ChatSchema.index({ members: 1 });
 
 export default mongoose.model("Chat", ChatSchema);

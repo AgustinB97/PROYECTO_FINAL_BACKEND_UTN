@@ -2,6 +2,9 @@ import ChatService from "../services/chat.service.js";
 import Chat from "../models/Chat.model.js";
 import Message from "../models/Messages.model.js";
 import { io, notifyUsersChatsUpdated } from "../main2.js";
+import streamifier from "streamifier";
+import cloudinary from "../config/cloudinary.config.js";
+import ENVIRONMENT from "../config/environment.config.js";
 
 class ChatController {
 
@@ -22,19 +25,41 @@ class ChatController {
 
     async createGroup(req, res) {
         try {
-            const { name, ownerId, participants = [], avatar } = req.body;
-            const group = await ChatService.createGroup({ name, ownerId, participants, avatar });
-            notifyUsersChatsUpdated(group, io);
-            const allMembers = [ownerId, ...participants];
-            allMembers.forEach(userId => {
-                io.to(userId).emit("new_chat", group);
+            const { name, ownerId, participants } = req.body;
+            const parsedParticipants = JSON.parse(participants);
+            let avatarUrl = null;
+
+            if (req.file) {
+                avatarUrl = await new Promise((resolve, reject) => {
+                    const upload = cloudinary.uploader.upload_stream(
+                        { folder: "avatars/groups" },
+                        (err, result) => {
+                            if (err) reject(err);
+                            else resolve(result.secure_url);
+                        }
+                    );
+                    streamifier.createReadStream(req.file.buffer).pipe(upload);
+                });
+            }
+
+            if (!avatarUrl) {
+                avatarUrl = ENVIRONMENT.DEFAULT_AVATAR_URL;
+            }
+
+            const group = await ChatService.createGroup({
+                name,
+                ownerId,
+                participants: parsedParticipants,
+                avatar: avatarUrl
             });
 
             return res.status(201).json({ ok: true, group });
+
         } catch (error) {
-            return res.status(error.status || 500).json({ ok: false, message: error.message });
+            console.error("ERROR CREANDO GRUPO:", error);
+            return res.status(500).json({ ok: false, message: error.message });
         }
-    }
+    };
 
 
     async getUserChats(req, res) {

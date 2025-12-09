@@ -8,7 +8,7 @@ const mailTransporter = nodemailer.createTransport({
         pass: ENVIRONMENT.APP_PASSWORD
     },
     tls: {
-        rejectUnauthorized: false // Ignoramos validaciones de certificado TLS
+        rejectUnauthorized: false
     }
 })
 

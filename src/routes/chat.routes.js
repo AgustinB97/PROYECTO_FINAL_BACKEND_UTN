@@ -1,11 +1,12 @@
 import { Router } from "express";
 import ChatController from "../controllers/chat.controller.js";
+import { uploadAvatar } from "../middlewares/uploadAvatar.js";
 
 const router = Router();
 
 router.post("/private", ChatController.createOrGetPrivate);
 
-router.post("/group/create", ChatController.createGroup);
+router.post("/group/create",uploadAvatar, ChatController.createGroup);
 
 router.get("/user/:userId", ChatController.getUserChats);
 
