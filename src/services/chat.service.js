@@ -143,7 +143,7 @@ class ChatService {
 static async getLastMessage(chatId) {
   if (!chatId) throw new CustomError("Falta chatId", 400);
 
-  const lastMsg = await Message.findOne({ chat: chatId })
+  const lastMsg = await Message.findOne({ chatId })
     .sort({ createdAt: -1 })
     .populate("sender", "username avatar");
 

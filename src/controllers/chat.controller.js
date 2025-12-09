@@ -209,7 +209,7 @@ class ChatController {
             
             await msg.deleteOne();
 
-            const lastMsg = await Message.findOne({ chat: chatId })
+            const lastMsg = await Message.findOne({ chatId })
                 .sort({ createdAt: -1 })
                 .populate("sender", "_id username avatar")
                 .populate("chatId", "_id name members avatar");

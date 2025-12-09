@@ -84,21 +84,25 @@ io.on("connection", (socket) => {
         try {
             const result = await ChatService.deleteMessage(messageId);
 
-            if (result.chatId) {
+            if (!result.chatId) return;
 
-                const chat = await ChatService.getChatById(result.chatId);
+            const chatId = result.chatId.toString();
 
+            const last_message = await Message.findOne({ chatId })
+                .sort({ createdAt: -1 })
+                .populate("sender", "_id username avatar");
 
-                io.to(result.chatId).emit("message_deleted", {
-                    messageId: result.deleted
-                });
+            io.to(chatId).emit("message_deleted", {
+                chatId,
+                messageId: result.deleted,
+                last_message: last_message || null
+            });
 
-                notifyUsersChatsUpdated(chat, io);
-            }
+            const chat = await ChatService.getChatById(chatId);
+            notifyUsersChatsUpdated(chat, io);
 
         } catch (err) {
-            console.error("Error en socket delete_message:", err.message);
-            socket.emit("error_delete_message", { message: err.message });
+            console.error("Error en socket delete_message:", err);
         }
     });
 
