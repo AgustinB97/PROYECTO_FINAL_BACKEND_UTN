@@ -205,7 +205,7 @@ class ChatController {
 
             if (!msg) return res.status(404).json({ ok: false, message: "Mensaje no encontrado" });
 
-            const chatId = msg.chat.toString();
+            const chatId = msg.chatId.toString();
             
             await msg.deleteOne();
 
