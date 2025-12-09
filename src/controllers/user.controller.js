@@ -85,7 +85,7 @@ export const updateAvatar = async (req, res, next) => {
                         resolve(result.secure_url);
                     }
                 );
-                streamifier.createReadStream(buffer).pipe(stream);
+                streamifier.createReadStream(file.buffer).pipe(stream);
             });
         };
 
