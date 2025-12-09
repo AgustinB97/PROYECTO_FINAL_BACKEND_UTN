@@ -18,16 +18,14 @@ const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
     cors: {
-        origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-iota.vercel.app",
-            "https://proyecto-final-frontend-utn.vercel.app"],
+        origin: "*",
         methods: ["GET", "POST"],
         credentials: true
     }
 });
 
 app.use(cors({
-    origin: [ENVIRONMENT.URL_FRONTEND, "https://proyecto-final-frontend-utn-iota.vercel.app",
-        "https://proyecto-final-frontend-utn.vercel.app"],
+    origin: "*",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
@@ -77,9 +75,9 @@ io.on("connection", (socket) => {
             chatId,
             message,
         });
-        
+
         console.log("[BACK] emit receive_message enviado a sala:", chatId);
-        
+
         notifyUsersChatsUpdated(chat, io);
     });
 
@@ -116,10 +114,12 @@ io.on("connection", (socket) => {
 });
 
 if (process.env.NODE_ENV !== "production") {
-    const PORT = process.env.PORT;
-    httpServer.listen(PORT, () =>
-        console.log(`🔥 Server + Socket corriendo en puerto ${PORT}`)
-    );
+    const PORT = process.env.PORT || 3000;
+
+    httpServer.listen(PORT, () => {
+        console.log(`🔥 Server + Socket escuchando en puerto ${PORT}`);
+    });
+
 }
 
 export default app;
