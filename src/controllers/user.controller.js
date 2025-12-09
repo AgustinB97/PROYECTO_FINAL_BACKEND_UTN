@@ -2,6 +2,8 @@ import User from "../models/User.model.js";
 import bcrypt from "bcrypt";
 import { ServerError } from "../manejarErrorCustom.js";
 import cloudinary from "../config/cloudinary.config.js";
+import streamifier from "streamifier";
+
 
 
 
