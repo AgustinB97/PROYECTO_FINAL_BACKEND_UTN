@@ -38,7 +38,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/chat", chatRouter);
 
-app.put("/uploads", express.static("uploads"));
+app.use("/uploads", express.static("uploads"));
 
 export const notifyUsersChatsUpdated = (chat, io) => {
     chat.members.forEach(member => {
@@ -113,13 +113,11 @@ io.on("connection", (socket) => {
     });
 });
 
-if (process.env.NODE_ENV !== "production") {
     const PORT = process.env.PORT || 3000;
 
     httpServer.listen(PORT, () => {
         console.log(`🔥 Server + Socket escuchando en puerto ${PORT}`);
     });
 
-}
 
 export default app;
