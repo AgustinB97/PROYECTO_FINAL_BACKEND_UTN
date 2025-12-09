@@ -76,10 +76,10 @@ export const updateAvatar = async (req, res, next) => {
             return res.status(400).json({ ok: false, message: "No se envió ningún archivo" });
         }
 
-        const uploadToCloudinary = (buffer) => {
+        const uploadToCloudinary = (file) => {
             return new Promise((resolve, reject) => {
                 const stream = cloudinary.uploader.upload_stream(
-                    { folder: "avatars" },
+                    { folder: "avatars",  format: "jpg", resource_type: "image" },
                     (error, result) => {
                         if (error) return reject(error);
                         resolve(result.secure_url);
@@ -89,7 +89,7 @@ export const updateAvatar = async (req, res, next) => {
             });
         };
 
-        const avatarUrl = await uploadToCloudinary(req.file.buffer);
+        const avatarUrl = await uploadToCloudinary(req.file);
 
         const updatedUser = await User.findByIdAndUpdate(
             userId,
