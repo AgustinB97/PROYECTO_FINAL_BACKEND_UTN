@@ -63,19 +63,23 @@ io.on("connection", (socket) => {
 
 
     socket.on("send_message", async (msgData) => {
+        console.log("[BACK] send_message recibido:", msgData);
         const { chatId } = msgData;
 
 
         const message = await ChatService.createMessage(msgData);
-
+        console.log(" [BACK] Mensaje creado:", message);
 
         const chat = await ChatService.getChatById(chatId);
+        console.log(" [BACK] Chat encontrado:", chatId)
 
         io.to(chatId).emit("receive_message", {
             chatId,
             message,
         });
-
+        
+        console.log("[BACK] emit receive_message enviado a sala:", chatId);
+        
         notifyUsersChatsUpdated(chat, io);
     });
 
