@@ -19,6 +19,7 @@ const httpServer = createServer(app);
 export const io = new Server(httpServer, {
     cors: {
         origin: "https://proyecto-final-frontend-utn-iota.vercel.app",
+        transports: ["websocket"],
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -26,6 +27,7 @@ export const io = new Server(httpServer, {
 
 app.use(cors({
     origin: "https://proyecto-final-frontend-utn-iota.vercel.app",
+    transports: ["websocket"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
