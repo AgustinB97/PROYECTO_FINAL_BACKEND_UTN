@@ -79,7 +79,7 @@ export const updateAvatar = async (req, res, next) => {
         const uploadToCloudinary = (file) => {
             return new Promise((resolve, reject) => {
                 const stream = cloudinary.uploader.upload_stream(
-                    { folder: "avatars", resource_type: "image", format: file.originalname.split(".").pop().toLowerCase() },
+                    { folder: "avatars", format: "jpg", resource_type: "image" },
                     (error, result) => {
                         if (error) return reject(error);
                         resolve(result.secure_url);
