@@ -22,7 +22,7 @@ export const io = new Server(httpServer, {
         methods: ["GET", "POST"],
         credentials: true
     },
-    transports: ["websocket"]
+            transports: ["websocket"]
 });
 
 app.use(cors({
@@ -30,7 +30,7 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
-}
+},
 ));
 
 app.use(express.json());
@@ -68,10 +68,10 @@ io.on("connection", (socket) => {
 
 
         const message = await ChatService.createMessage(msgData);
-
-        message = await message.populate("sender", "username avatar");
+        console.log(" [BACK] Mensaje creado:", message);
 
         const chat = await ChatService.getChatById(chatId);
+        console.log(" [BACK] Chat encontrado:", chatId)
 
         io.to(chatId).emit("receive_message", {
             chatId,
@@ -115,11 +115,11 @@ io.on("connection", (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 3000;
 
-httpServer.listen(PORT, () => {
-    console.log(`🔥 Server + Socket escuchando en puerto ${PORT}`);
-});
+    httpServer.listen(PORT, () => {
+        console.log(`🔥 Server + Socket escuchando en puerto ${PORT}`);
+    });
 
 
 export default app;
